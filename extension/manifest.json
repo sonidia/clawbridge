@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Shopee Aff Link Generator",
+  "version": "1.0",
+  "description": "Tự động lấy link Affiliate Shopee từ trang sản phẩm",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "tabs",
+    "clipboardRead"
+  ],
+  "host_permissions": [
+    "https://*.shopee.vn/*",
+    "https://affiliate.shopee.vn/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://shopee.vn/*", "https://www.shopee.vn/*"],
+      "exclude_matches": ["https://affiliate.shopee.vn/*"],
+      "js": ["content-product.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://affiliate.shopee.vn/*"],
+      "js": ["content-affiliate.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": []
+}

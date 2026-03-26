@@ -1,0 +1,2 @@
+Replace icon48.png and icon128.png with actual PNG icons.
+You can use any 48x48 and 128x128 PNG images.
