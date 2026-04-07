@@ -224,6 +224,8 @@ class ClawBridgeServer:
             {"action": "hover", "target_id": "cb_7"}
             {"action": "key_press", "value": "Enter"}
             {"action": "wait"}
+            {"action": "upload", "target_id": "cb_8", "value": "/path/to/file.png"}
+            {"action": "download", "target_id": "cb_9", "value": "/custom/path/to/save.pdf"}
 
         Response:
             {"success": true, "action": "click", "current_url": "..."}
@@ -239,7 +241,7 @@ class ClawBridgeServer:
         action_type = data.get("action", "").strip()
         if not action_type:
             return web.json_response(
-                {"success": False, "error": "Missing 'action' field. Valid: click, double_click, hover, type, scroll, select, key_press, wait, navigate"},
+                {"success": False, "error": "Missing 'action' field. Valid: click, double_click, hover, type, scroll, select, key_press, wait, navigate, upload, download"},
                 status=400,
             )
 

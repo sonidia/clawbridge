@@ -384,7 +384,7 @@ async def execute_action(page: Page, action: dict[str, Any]) -> bool:
 
     Supported actions:
         click, double_click, hover, type, scroll, select, key_press,
-        wait, navigate, done
+        wait, navigate, upload, download, done
 
     Args:
         page: The Playwright Page object.
@@ -477,6 +477,80 @@ async def execute_action(page: Page, action: dict[str, Any]) -> bool:
             await page.goto(value, wait_until="domcontentloaded", timeout=30000)
             await asyncio.sleep(_gauss_delay(1.0, 0.3, 0.5))
             logger.info("Navigated to: %s", value)
+            return True
+
+        elif action_type == "upload":
+            if not target_id or not value:
+                logger.warning("Upload action requires target_id and value (file/path).")
+                return False
+            element = await find_element_by_cb_id(page, target_id)
+            if not element:
+                logger.warning("Element %s not found on page.", target_id)
+                return False
+
+            # value can be a single path or a list of paths
+            file_paths = value if isinstance(value, list) else [value]
+
+            tag_name = await element.evaluate("el => el.tagName.toLowerCase()")
+            input_type = await element.evaluate("el => el.type") if tag_name == "input" else None
+
+            if tag_name == "input" and input_type == "file":
+                try:
+                    await element.set_input_files(file_paths)
+                    logger.info("Uploaded files %s directly to %s", file_paths, target_id)
+                    await asyncio.sleep(_gauss_delay(0.5, 0.2, 0.2))
+                    return True
+                except Exception as e:
+                    logger.warning("Direct set_input_files failed on input element, will try file chooser: %s", e)
+
+            # For wrapped inputs or buttons that trigger a file chooser
+            try:
+                async with page.expect_file_chooser(timeout=10000) as fc_info:
+                    await human_click(page, element)
+                file_chooser = await fc_info.value
+                await file_chooser.set_files(file_paths)
+                logger.info("Uploaded files %s via file chooser for %s", file_paths, target_id)
+                await asyncio.sleep(_gauss_delay(0.5, 0.2, 0.2))
+                return True
+            except Exception as e:
+                logger.error("Failed to upload file via file chooser: %s", e)
+                # Try fallback, attempt to find a hidden input file within the element and call set_input_files
+                try:
+                    hidden_input = await element.query_selector("input[type='file']")
+                    if hidden_input:
+                        await hidden_input.set_input_files(file_paths)
+                        logger.info("Uploaded files %s to hidden input inside %s", file_paths, target_id)
+                        await asyncio.sleep(_gauss_delay(0.5, 0.2, 0.2))
+                        return True
+                    else:
+                        return False
+                except Exception as inner_e:
+                    logger.error("Fallback hidden input upload failed: %s", inner_e)
+                    return False
+
+        elif action_type == "download":
+            if not target_id:
+                logger.warning("Download action requires target_id to click.")
+                return False
+            element = await find_element_by_cb_id(page, target_id)
+            if not element:
+                logger.warning("Element %s not found on page.", target_id)
+                return False
+
+            save_path = value if value else None # Optional path to save the downloaded file
+
+            async with page.expect_download() as download_info:
+                await human_click(page, element)
+
+            download = await download_info.value
+
+            # Note: We need to determine where to save it. If save_path is provided we use it.
+            # Otherwise we use the suggested filename in a default directory.
+            import os
+            final_path = save_path or os.path.join(os.getcwd(), download.suggested_filename)
+            await download.save_as(final_path)
+
+            logger.info("Downloaded file saved to %s", final_path)
             return True
 
         elif action_type == "done":

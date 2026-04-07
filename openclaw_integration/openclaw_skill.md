@@ -5,51 +5,65 @@ You have access to ClawBridge, a browser automation tool that performs actions l
 **Universal**: Content extraction works automatically on any website — social media, e-commerce, news, forums, blogs, etc. No site-specific configuration needed.
 
 ## API Base URL
+
 ```
 http://localhost:8899
 ```
+
 > WSL2: nếu localhost không hoạt động, dùng `ip route show default | awk '{print $3}'` để lấy IP Windows host.
 
 ## Endpoints
 
 ### ★ /snapshot (RECOMMENDED)
+
 ```bash
 curl -s http://localhost:8899/snapshot
 ```
+
 Returns **everything**: interactive elements (with `cb_id`) AND text content. Auto-detects and extracts:
+
 - **posts[]** — Social media posts, forum threads, blog articles (author, text, timestamp)
 - **products[]** — E-commerce product listings (name, price, link)
 - **text_blocks[]** — Generic text content for any other page type
 
 ### ★★ /scroll_and_snapshot (for lazy-loading sites)
+
 ```bash
 curl -s "http://localhost:8899/scroll_and_snapshot?scrolls=3"
 ```
+
 Scrolls down N times, waits for lazy content to load, then takes a full snapshot. **Use this for any site that loads content on scroll** (infinite scroll, pagination, etc.).
 
 ### /page_text
+
 ```bash
 curl -s http://localhost:8899/page_text
 ```
+
 Text content only (posts/products/text_blocks). Auto-waits for JS-rendered content.
 
 ### /dom
+
 ```bash
 curl -s http://localhost:8899/dom
 ```
+
 Interactive elements only (buttons, links, inputs with `cb_id`). Lighter, no text content.
 
 ### /navigate
+
 ```bash
 curl -s -X POST http://localhost:8899/navigate -H "Content-Type: application/json" -d '{"url": "https://example.com"}'
 ```
 
 ### /execute (perform browser action)
+
 ```bash
 curl -s -X POST http://localhost:8899/execute -H "Content-Type: application/json" -d '{"action": "<ACTION>", "target_id": "<CB_ID>", "value": "<VALUE>"}'
 ```
 
 Actions:
+
 - `click` — Click element (needs target_id)
 - `double_click` — Double-click element
 - `hover` — Hover over element
@@ -57,38 +71,49 @@ Actions:
 - `scroll` — Scroll page (value: "up" or "down")
 - `select` — Select dropdown (needs target_id + value)
 - `key_press` — Press key (value: "Enter", "Tab", "Escape"...)
+- `upload` — Upload file(s). Target can be `<input type="file">`, a wrapper, or a button that opens a file chooser (needs target_id + value as file path or list of paths).
+- `download` — Click element to download and save file (needs target_id, optional value as save path)
 - `wait` — Wait for page load
 
 ### /comment (type into rich-text editors)
+
 ```bash
 curl -s -X POST http://localhost:8899/comment -H "Content-Type: application/json" \
   -d '{"target_id":"cb_XX","text":"Hello world!","submit":true}'
 ```
+
 Works on **any** contenteditable/rich-text editor: social media comment boxes, forum reply forms, CMS editors (DraftJS, Lexical, ProseMirror, etc.). `submit: true` presses Enter after typing.
 
 ### /find_text (find element by visible text)
+
 ```bash
 curl -s "http://localhost:8899/find_text?q=Submit"
 ```
+
 Searches entire page including Shadow DOM. Returns `center_x`/`center_y` for clicking.
 
 ### /click_xy (click by coordinates)
+
 ```bash
 curl -s -X POST http://localhost:8899/click_xy -H "Content-Type: application/json" -d '{"x": 950, "y": 420}'
 ```
 
 ### /copy_aff_link (Shopee affiliate extension)
+
 ```bash
 curl -s http://localhost:8899/copy_aff_link
 ```
+
 Clicks the extension button, waits for affiliate link, returns it.
 
 ### /screenshot
+
 ```bash
 curl -s http://localhost:8899/screenshot
 ```
 
 ### /status
+
 ```bash
 curl -s http://localhost:8899/status
 ```
@@ -109,8 +134,18 @@ curl -s http://localhost:8899/status
   "success": true,
   "url": "https://any-website.com/page",
   "elements": [
-    {"id": "cb_1", "tag": "input", "placeholder": "Search", "bbox": {"x": 300, "y": 10, "w": 250, "h": 36}},
-    {"id": "cb_5", "tag": "a", "text": "Read more", "bbox": {"x": 100, "y": 415, "w": 80, "h": 20}}
+    {
+      "id": "cb_1",
+      "tag": "input",
+      "placeholder": "Search",
+      "bbox": { "x": 300, "y": 10, "w": 250, "h": 36 }
+    },
+    {
+      "id": "cb_5",
+      "tag": "a",
+      "text": "Read more",
+      "bbox": { "x": 100, "y": 415, "w": 80, "h": 20 }
+    }
   ],
   "posts": [
     {
@@ -187,6 +222,7 @@ curl -s -X POST http://localhost:8899/comment \
 ```
 
 ## Important Notes
+
 - All actions simulate human behavior (bezier mouse movements, gaussian typing delays)
 - Browser runs through AdsPower anti-detect profiles
 - Content extraction is **universal** — auto-detects posts/products/text on any website
